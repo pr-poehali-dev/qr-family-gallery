@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import QRScanner from '@/components/QRScanner';
+
+const QR_AUTH_URL = 'https://functions.poehali.dev/39aacb63-4df4-438f-9ee0-13de41ed7e7f';
 
 interface Memory {
   id: number;
@@ -72,6 +75,40 @@ export default function Index() {
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
   const [memories, setMemories] = useState<Memory[]>(mockMemories);
   const [isManagingPeople, setIsManagingPeople] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [authError, setAuthError] = useState('');
+
+  useEffect(() => {
+    const authToken = localStorage.getItem('family_album_auth');
+    if (authToken) {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const verifyQRCode = async (qrData: string) => {
+    try {
+      const response = await fetch(QR_AUTH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'verify', qr_data: qrData }),
+      });
+
+      const data = await response.json();
+      if (data.valid) {
+        localStorage.setItem('family_album_auth', data.token);
+        setIsAuthenticated(true);
+        setShowScanner(false);
+      } else {
+        setAuthError('Неверный QR-код. Попробуйте снова.');
+        setTimeout(() => setAuthError(''), 3000);
+      }
+    } catch (error) {
+      setAuthError('Ошибка проверки QR-кода');
+      setTimeout(() => setAuthError(''), 3000);
+    }
+  };
 
   const allTags = Array.from(new Set(memories.flatMap(m => m.tags)));
   const allPeople = Array.from(new Set(memories.flatMap(m => m.people)));
@@ -113,13 +150,37 @@ export default function Index() {
             </p>
           </div>
 
+          {authError && (
+            <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm text-center">
+              {authError}
+            </div>
+          )}
+
           <Button 
-            onClick={() => setIsAuthenticated(true)}
+            onClick={() => setShowScanner(true)}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             size="lg"
           >
-            Демо-вход
+            <Icon name="QrCode" size={20} className="mr-2" />
+            Отсканировать QR-код
           </Button>
+
+          <Button 
+            variant="outline"
+            onClick={() => window.location.href = '/generate-qr'}
+            className="w-full"
+            size="lg"
+          >
+            <Icon name="Key" size={20} className="mr-2" />
+            Создать новый QR-код
+          </Button>
+
+          {showScanner && (
+            <QRScanner
+              onScan={verifyQRCode}
+              onClose={() => setShowScanner(false)}
+            />
+          )}
         </Card>
       </div>
     );

@@ -1,0 +1,32 @@
+{
+  "tests": [
+    {
+      "name": "Generate QR code",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "generate"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "qr_data": "string",
+        "token": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Verify valid QR code",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "verify",
+        "qr_data": "test_token:a1b2c3d4e5f6"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "valid": "boolean"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
