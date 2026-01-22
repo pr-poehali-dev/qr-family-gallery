@@ -70,11 +70,13 @@ export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
+  const [memories, setMemories] = useState<Memory[]>(mockMemories);
+  const [isManagingPeople, setIsManagingPeople] = useState(false);
 
-  const allTags = Array.from(new Set(mockMemories.flatMap(m => m.tags)));
-  const allPeople = Array.from(new Set(mockMemories.flatMap(m => m.people)));
+  const allTags = Array.from(new Set(memories.flatMap(m => m.tags)));
+  const allPeople = Array.from(new Set(memories.flatMap(m => m.people)));
 
-  const filteredMemories = mockMemories.filter(memory => {
+  const filteredMemories = memories.filter(memory => {
     const matchesSearch = memory.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          memory.date.includes(searchQuery);
     const matchesTag = !selectedTag || memory.tags.includes(selectedTag);
@@ -183,10 +185,20 @@ export default function Index() {
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                    <Icon name="Users" size={16} />
-                    Люди
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Icon name="Users" size={16} />
+                      Люди
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsManagingPeople(!isManagingPeople)}
+                      className="h-7 text-xs"
+                    >
+                      {isManagingPeople ? 'Готово' : 'Управление'}
+                    </Button>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <Badge
                       variant={selectedPerson === null ? "default" : "outline"}
@@ -199,10 +211,25 @@ export default function Index() {
                       <Badge
                         key={person}
                         variant={selectedPerson === person ? "default" : "outline"}
-                        className="cursor-pointer"
-                        onClick={() => setSelectedPerson(person)}
+                        className="cursor-pointer flex items-center gap-1"
+                        onClick={() => !isManagingPeople && setSelectedPerson(person)}
                       >
                         {person}
+                        {isManagingPeople && (
+                          <Icon
+                            name="X"
+                            size={14}
+                            className="ml-1 hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMemories(memories.map(m => ({
+                                ...m,
+                                people: m.people.filter(p => p !== person)
+                              })));
+                              if (selectedPerson === person) setSelectedPerson(null);
+                            }}
+                          />
+                        )}
                       </Badge>
                     ))}
                   </div>
